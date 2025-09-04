@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pink Piano & Flute Game</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(to right, #f472b6, #ec4899);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    color: white;
+  }
+  h1 { margin-bottom: 10px; }
+  .controls {
+    margin-bottom: 20px;
+  }
+  select {
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: none;
+    font-size: 16px;
+  }
+  .keyboard {
+    display: flex;
+    gap: 6px;
+  }
+  .key {
+    width: 70px;
+    height: 160px;
+    background: #f9a8d4; /* Pink keys */
+    border-radius: 8px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    cursor: pointer;
+    color: #1f2937;
+    font-weight: bold;
+    font-size: 18px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    user-select: none;
+    transition: transform 0.1s, background 0.1s;
+  }
+  .key:active, .key.active {
+    transform: translateY(4px);
+    background: #f472b6; /* darker pink when pressed */
+  }
+</style>
+</head>
+<body>
+  <h1>🎹 Pink Piano & Flute Game</h1>
+  <div class="controls">
+    <label for="instrument">Instrument:</label>
+    <select id="instrument">
+      <option value="piano">Piano</option>
+      <option value="flute">Flute</option>
+    </select>
+  </div>
+
+  <div class="keyboard">
+    <div class="key" data-note="261.63">A<br><small>C4</small></div>
+    <div class="key" data-note="293.66">S<br><small>D4</small></div>
+    <div class="key" data-note="329.63">D<br><small>E4</small></div>
+    <div class="key" data-note="349.23">F<br><small>F4</small></div>
+    <div class="key" data-note="392.00">G<br><small>G4</small></div>
+    <div class="key" data-note="440.00">H<br><small>A4</small></div>
+    <div class="key" data-note="493.88">J<br><small>B4</small></div>
+    <div class="key" data-note="523.25">K<br><small>C5</small></div>
+  </div>
+
+<script>
+  let audioCtx;
+  const keys = document.querySelectorAll('.key');
+  const instrumentSelect = document.getElementById('instrument');
+
+  function playSound(frequency) {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    // Instrument type
+    let type = "sine";
+    if (instrumentSelect.value === "piano") {
+      type = "triangle";
+    } else if (instrumentSelect.value === "flute") {
+      type = "sine";
+    }
+
+    osc.type = type;
+    osc.frequency.value = frequency;
+
+    const now = audioCtx.currentTime;
+    // Envelope
+    if (instrumentSelect.value === "piano") {
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.4, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+    } else if (instrumentSelect.value === "flute") {
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.3, now + 0.1);
+      gain.gain.linearRampToValueAtTime(0.25, now + 1.5);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 2);
+    }
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start();
+    osc.stop(now + (instrumentSelect.value === "flute" ? 2.2 : 1.3));
+  }
+
+  // Mouse clicks
+  keys.forEach(key => {
+    key.addEventListener('mousedown', () => {
+      playSound(parseFloat(key.dataset.note));
+      key.classList.add('active');
+    });
+    key.addEventListener('mouseup', () => key.classList.remove('active'));
+    key.addEventListener('mouseleave', () => key.classList.remove('active'));
+  });
+
+  // Keyboard press
+  const keyMap = {a:0,s:1,d:2,f:3,g:4,h:5,j:6,k:7};
+  window.addEventListener('keydown', e => {
+    const idx = keyMap[e.key.toLowerCase()];
+    if (idx !== undefined) {
+      const key = keys[idx];
+      playSound(parseFloat(key.dataset.note));
+      key.classList.add('active');
+    }
+  });
+  window.addEventListener('keyup', e => {
+    const idx = keyMap[e.key.toLowerCase()];
+    if (idx !== undefined) {
+      keys[idx].classList.remove('active');
+    }
+  });
+</script>
+</body>
+</html>
